@@ -1,20 +1,8 @@
 # Offgrid
 
-Offline-first places and notes. SQLite is the source of truth; changes sync when the device is back online. This is a Clean Architecture / sync sample, not an OCR or expiry app.
+Save places and notes on your phone. Everything is stored locally first and syncs when you have a connection.
 
-## Status
-
-Scaffold (7 Sep 2026): Flutter app and Clean Architecture layers. Place/Note entities and SQLite come on later weekdays.
-
-## Layout
-
-```
-lib/core/error          Failure types
-lib/core/usecase        Use-case contract
-lib/domain/repositories Abstract offline repository
-lib/data/datasources    Local vs remote contracts
-lib/presentation/pages  UI
-```
+Flutter, Clean Architecture, SQLite on device.
 
 ## Run
 
@@ -22,7 +10,3 @@ lib/presentation/pages  UI
 flutter pub get
 flutter run
 ```
-
-## v1 target
-
-Add a place or note offline, list it, sync when online, unit + widget tests, GitHub Actions.

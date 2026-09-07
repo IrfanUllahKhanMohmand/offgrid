@@ -11,11 +11,11 @@ abstract class LocalDataSource<T> {
 class UnimplementedLocalDataSource<T> implements LocalDataSource<T> {
   @override
   Future<Result<List<T>>> readAll() async {
-    return const Err(CacheFailure('Local data source is not wired yet'));
+    return const Err(CacheFailure('Could not read local storage'));
   }
 
   @override
   Future<Result<T>> write(T entity) async {
-    return const Err(CacheFailure('Local data source is not wired yet'));
+    return const Err(CacheFailure('Could not write to local storage'));
   }
 }

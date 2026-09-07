@@ -11,11 +11,11 @@ abstract class RemoteDataSource<T> {
 class UnimplementedRemoteDataSource<T> implements RemoteDataSource<T> {
   @override
   Future<Result<List<T>>> pull() async {
-    return const Err(SyncFailure('Remote data source is not wired yet'));
+    return const Err(SyncFailure('Could not reach the server'));
   }
 
   @override
   Future<Result<T>> push(T entity) async {
-    return const Err(SyncFailure('Remote data source is not wired yet'));
+    return const Err(SyncFailure('Could not reach the server'));
   }
 }
