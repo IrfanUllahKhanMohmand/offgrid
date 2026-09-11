@@ -7,5 +7,6 @@ void main() {
 
     expect(find.text('Offgrid'), findsOneWidget);
     expect(find.text('Places and notes'), findsOneWidget);
+    expect(find.text('Lahore Fort'), findsOneWidget);
   });
 }
