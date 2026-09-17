@@ -7,7 +7,9 @@ void main() {
 }
 
 class OffgridApp extends StatelessWidget {
-  const OffgridApp({super.key});
+  const OffgridApp({super.key, this.home});
+
+  final Widget? home;
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +19,7 @@ class OffgridApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF3D5A3D)),
         useMaterial3: true,
       ),
-      home: const HomePage(),
+      home: home ?? const HomePage(),
     );
   }
 }
