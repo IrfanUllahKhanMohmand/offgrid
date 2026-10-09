@@ -14,4 +14,14 @@ class Note {
   final String body;
   final SyncState syncState;
   final DateTime createdAt;
+
+  Note copyWith({SyncState? syncState}) {
+    return Note(
+      id: id,
+      placeId: placeId,
+      body: body,
+      syncState: syncState ?? this.syncState,
+      createdAt: createdAt,
+    );
+  }
 }

@@ -16,12 +16,35 @@ class _MemoryRepo<T> implements OfflineRepository<T> {
 
   @override
   Future<Result<T>> upsert(T entity) async {
-    _items.add(entity);
+    final index = _items.indexWhere((item) {
+      if (item is Place && entity is Place) {
+        return item.id == entity.id;
+      }
+      if (item is Note && entity is Note) {
+        return item.id == entity.id;
+      }
+      return false;
+    });
+    if (index >= 0) {
+      _items[index] = entity;
+    } else {
+      _items.add(entity);
+    }
     return Ok(entity);
   }
 
   @override
-  Future<Result<void>> syncPending() async => const Ok(null);
+  Future<Result<void>> syncPending() async {
+    for (var i = 0; i < _items.length; i++) {
+      final item = _items[i];
+      if (item is Place && item.syncState == SyncState.pendingPush) {
+        _items[i] = item.copyWith(syncState: SyncState.clean) as T;
+      } else if (item is Note && item.syncState == SyncState.pendingPush) {
+        _items[i] = item.copyWith(syncState: SyncState.clean) as T;
+      }
+    }
+    return const Ok(null);
+  }
 }
 
 void main() {
@@ -54,6 +77,15 @@ void main() {
 
     expect(find.text('Offgrid'), findsOneWidget);
     expect(find.text('Lahore Fort'), findsOneWidget);
-    expect(find.text('Alamgiri gate is quieter after late afternoon.'), findsOneWidget);
+    expect(
+      find.text('Alamgiri gate is quieter after late afternoon.'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Waiting to sync'), findsWidgets);
+
+    await tester.tap(find.byTooltip('Sync'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Synced'), findsWidgets);
   });
 }

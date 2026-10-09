@@ -4,12 +4,17 @@ import '../../core/error/failure.dart';
 import '../../core/usecase/usecase.dart';
 import '../../domain/entities/place.dart';
 import '../../domain/repositories/offline_repository.dart';
+import '../datasources/remote_data_source.dart';
 import '../db/offgrid_database.dart';
 
 class SqlitePlaceRepository implements OfflineRepository<Place> {
-  SqlitePlaceRepository(this._database);
+  SqlitePlaceRepository(
+    this._database, {
+    RemoteDataSource<Place>? remote,
+  }) : _remote = remote ?? MemoryRemoteDataSource<Place>();
 
   final OffgridDatabase _database;
+  final RemoteDataSource<Place> _remote;
 
   @override
   Future<Result<List<Place>>> getAll() async {
@@ -39,7 +44,24 @@ class SqlitePlaceRepository implements OfflineRepository<Place> {
 
   @override
   Future<Result<void>> syncPending() async {
-    // Network sync lands in a later slice.
+    final loaded = await getAll();
+    if (loaded is Err<List<Place>>) {
+      return Err(loaded.failure);
+    }
+    final places = (loaded as Ok<List<Place>>).value;
+    for (final place in places) {
+      if (place.syncState != SyncState.pendingPush) {
+        continue;
+      }
+      final pushed = await _remote.push(place);
+      if (pushed is Err<Place>) {
+        return Err(pushed.failure);
+      }
+      final saved = await upsert(place.copyWith(syncState: SyncState.clean));
+      if (saved is Err<Place>) {
+        return Err(saved.failure);
+      }
+    }
     return const Ok(null);
   }
 

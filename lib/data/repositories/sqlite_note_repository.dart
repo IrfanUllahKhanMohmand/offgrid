@@ -4,12 +4,17 @@ import '../../core/error/failure.dart';
 import '../../core/usecase/usecase.dart';
 import '../../domain/entities/note.dart';
 import '../../domain/repositories/offline_repository.dart';
+import '../datasources/remote_data_source.dart';
 import '../db/offgrid_database.dart';
 
 class SqliteNoteRepository implements OfflineRepository<Note> {
-  SqliteNoteRepository(this._database);
+  SqliteNoteRepository(
+    this._database, {
+    RemoteDataSource<Note>? remote,
+  }) : _remote = remote ?? MemoryRemoteDataSource<Note>();
 
   final OffgridDatabase _database;
+  final RemoteDataSource<Note> _remote;
 
   @override
   Future<Result<List<Note>>> getAll() async {
@@ -39,6 +44,24 @@ class SqliteNoteRepository implements OfflineRepository<Note> {
 
   @override
   Future<Result<void>> syncPending() async {
+    final loaded = await getAll();
+    if (loaded is Err<List<Note>>) {
+      return Err(loaded.failure);
+    }
+    final notes = (loaded as Ok<List<Note>>).value;
+    for (final note in notes) {
+      if (note.syncState != SyncState.pendingPush) {
+        continue;
+      }
+      final pushed = await _remote.push(note);
+      if (pushed is Err<Note>) {
+        return Err(pushed.failure);
+      }
+      final saved = await upsert(note.copyWith(syncState: SyncState.clean));
+      if (saved is Err<Note>) {
+        return Err(saved.failure);
+      }
+    }
     return const Ok(null);
   }
 

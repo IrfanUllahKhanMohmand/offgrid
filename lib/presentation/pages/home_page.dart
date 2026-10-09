@@ -26,6 +26,7 @@ class _HomePageState extends State<HomePage> {
   late final OfflineRepository<Place> _places;
   late final OfflineRepository<Note> _notes;
   late Future<_HomeData> _load;
+  var _syncing = false;
 
   @override
   void initState() {
@@ -82,15 +83,56 @@ class _HomePageState extends State<HomePage> {
     await _notes.upsert(note);
   }
 
+  Future<void> _sync() async {
+    setState(() => _syncing = true);
+    final placesResult = await _places.syncPending();
+    final notesResult = await _notes.syncPending();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _syncing = false;
+      _load = _loadHome();
+    });
+    if (placesResult is Err || notesResult is Err) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not sync right now.')),
+      );
+    }
+  }
+
+  String _syncLabel(SyncState state) {
+    return switch (state) {
+      SyncState.clean => 'Synced',
+      SyncState.pendingPush => 'Waiting to sync',
+      SyncState.conflict => 'Needs attention',
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Offgrid')),
+      appBar: AppBar(
+        title: const Text('Offgrid'),
+        actions: [
+          IconButton(
+            tooltip: 'Sync',
+            onPressed: _syncing ? null : _sync,
+            icon: _syncing
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.cloud_upload_outlined),
+          ),
+        ],
+      ),
       body: FutureBuilder<_HomeData>(
         future: _load,
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            return Center(child: Text('Could not open local storage.'));
+            return const Center(child: Text('Could not open local storage.'));
           }
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
@@ -121,7 +163,7 @@ class _HomePageState extends State<HomePage> {
                     contentPadding: EdgeInsets.zero,
                     title: Text(place.name),
                     subtitle: Text(
-                      '${place.latitude}, ${place.longitude} · ${place.syncState.name}',
+                      '${place.latitude}, ${place.longitude} · ${_syncLabel(place.syncState)}',
                     ),
                   ),
                 for (final note in data.notes)
@@ -129,9 +171,12 @@ class _HomePageState extends State<HomePage> {
                     contentPadding: EdgeInsets.zero,
                     title: Text(note.body),
                     subtitle: Text(
-                      note.placeId == null
-                          ? 'Note'
-                          : 'On ${placeNames[note.placeId] ?? 'a place'}',
+                      [
+                        note.placeId == null
+                            ? 'Note'
+                            : 'On ${placeNames[note.placeId] ?? 'a place'}',
+                        _syncLabel(note.syncState),
+                      ].join(' · '),
                     ),
                   ),
               ],

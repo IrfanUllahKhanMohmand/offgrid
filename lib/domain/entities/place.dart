@@ -16,4 +16,15 @@ class Place {
   final double longitude;
   final SyncState syncState;
   final DateTime createdAt;
+
+  Place copyWith({SyncState? syncState}) {
+    return Place(
+      id: id,
+      name: name,
+      latitude: latitude,
+      longitude: longitude,
+      syncState: syncState ?? this.syncState,
+      createdAt: createdAt,
+    );
+  }
 }
