@@ -7,6 +7,8 @@ import '../../data/repositories/sqlite_place_repository.dart';
 import '../../domain/entities/note.dart';
 import '../../domain/entities/place.dart';
 import '../../domain/repositories/offline_repository.dart';
+import 'new_note_page.dart';
+import 'new_place_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({
@@ -90,15 +92,50 @@ class _HomePageState extends State<HomePage> {
     if (!mounted) {
       return;
     }
+    final next = _loadHome();
     setState(() {
       _syncing = false;
-      _load = _loadHome();
+      _load = next;
     });
     if (placesResult is Err || notesResult is Err) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Could not sync right now.')),
       );
     }
+  }
+
+  Future<void> _addPlace() async {
+    final place = await Navigator.of(context).push<Place>(
+      MaterialPageRoute(builder: (context) => const NewPlacePage()),
+    );
+    if (place == null) {
+      return;
+    }
+    await _places.upsert(place);
+    if (!mounted) {
+      return;
+    }
+    final next = _loadHome();
+    setState(() {
+      _load = next;
+    });
+  }
+
+  Future<void> _addNote(List<Place> places) async {
+    final note = await Navigator.of(context).push<Note>(
+      MaterialPageRoute(builder: (context) => NewNotePage(places: places)),
+    );
+    if (note == null) {
+      return;
+    }
+    await _notes.upsert(note);
+    if (!mounted) {
+      return;
+    }
+    final next = _loadHome();
+    setState(() {
+      _load = next;
+    });
   }
 
   String _syncLabel(SyncState state) {
@@ -127,6 +164,30 @@ class _HomePageState extends State<HomePage> {
                 : const Icon(Icons.cloud_upload_outlined),
           ),
         ],
+      ),
+      floatingActionButton: FutureBuilder<_HomeData>(
+        future: _load,
+        builder: (context, snapshot) {
+          final places = snapshot.data?.places ?? const <Place>[];
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              FloatingActionButton.small(
+                heroTag: 'add-note',
+                tooltip: 'Add note',
+                onPressed: () => _addNote(places),
+                child: const Icon(Icons.note_add_outlined),
+              ),
+              const SizedBox(height: 12),
+              FloatingActionButton(
+                heroTag: 'add-place',
+                tooltip: 'Add place',
+                onPressed: _addPlace,
+                child: const Icon(Icons.add_location_alt_outlined),
+              ),
+            ],
+          );
+        },
       ),
       body: FutureBuilder<_HomeData>(
         future: _load,

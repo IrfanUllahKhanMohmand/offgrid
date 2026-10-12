@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offgrid/core/usecase/usecase.dart';
 import 'package:offgrid/domain/entities/note.dart';
@@ -87,5 +88,27 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Synced'), findsWidgets);
+  });
+
+  testWidgets('adds a place from the form', (tester) async {
+    await tester.pumpWidget(
+      OffgridApp(
+        home: HomePage(
+          placeRepository: _MemoryRepo<Place>([]),
+          noteRepository: _MemoryRepo<Note>([]),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Add place'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField).first, 'Walled City');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Walled City'), findsOneWidget);
+    expect(find.textContaining('Waiting to sync'), findsWidgets);
   });
 }
